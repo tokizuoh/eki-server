@@ -6,14 +6,13 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/tokizuoh/eki-server/graph/model"
 )
 
 // Station is the resolver for the station field.
 func (r *queryResolver) Station(ctx context.Context, name string) ([]*model.Station, error) {
-	panic(fmt.Errorf("not implemented: Station - station"))
+	return r.station(name)
 }
 
 // Query returns QueryResolver implementation.
