@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    container_name: eki-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - 3306:3306
+    user: root
+    volumes:
+      - mysql-data-station:/var/lib/datadir
+volumes:
+  mysql-data-station:
+    driver: local
