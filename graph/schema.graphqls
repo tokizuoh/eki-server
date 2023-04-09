@@ -5,4 +5,5 @@ type Station {
 
 type Query {
   station(name: String!): [Station]
+  searchStation(for: String!): [Station]
 }

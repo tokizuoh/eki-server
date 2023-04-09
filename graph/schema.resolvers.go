@@ -15,6 +15,11 @@ func (r *queryResolver) Station(ctx context.Context, name string) ([]*model.Stat
 	return r.station(name)
 }
 
+// SearchStation is the resolver for the searchStation field.
+func (r *queryResolver) SearchStation(ctx context.Context, forArg string) ([]*model.Station, error) {
+	return r.searchStation(forArg)
+}
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 

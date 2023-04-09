@@ -54,3 +54,29 @@ func (r *Resolver) station(name string) ([]*model.Station, error) {
 
 	return mss, nil
 }
+
+func (r *Resolver) searchStation(forArg string) ([]*model.Station, error) {
+	q := fmt.Sprintf("SELECT * FROM station WHERE name LIKE '%%%s%%'", forArg)
+	rows, err := db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mss []*model.Station
+	for rows.Next() {
+		var s Station
+		err := rows.Scan(&s.id, &s.name)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		ms := model.Station{
+			DetabaseID: s.id,
+			Name:       s.name,
+		}
+		mss = append(mss, &ms)
+	}
+
+	return mss, nil
+}
