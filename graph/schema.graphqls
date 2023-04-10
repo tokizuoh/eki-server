@@ -1,9 +1,14 @@
 type Station {
   detabaseID: String!
   name: String!
+  isLiked: Boolean!
 }
 
 type Query {
   station(name: String!): [Station]
   searchStation(for: String!): [Station]
+}
+
+type Mutation {
+  likeStation(databaseID: String!): Station
 }

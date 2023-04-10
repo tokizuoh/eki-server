@@ -10,6 +10,11 @@ import (
 	"github.com/tokizuoh/eki-server/graph/model"
 )
 
+// LikeStation is the resolver for the likeStation field.
+func (r *mutationResolver) LikeStation(ctx context.Context, databaseID string) (*model.Station, error) {
+	return r.likeStation(databaseID)
+}
+
 // Station is the resolver for the station field.
 func (r *queryResolver) Station(ctx context.Context, name string) ([]*model.Station, error) {
 	return r.station(name)
@@ -20,7 +25,11 @@ func (r *queryResolver) SearchStation(ctx context.Context, forArg string) ([]*mo
 	return r.searchStation(forArg)
 }
 
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

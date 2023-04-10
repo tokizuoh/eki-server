@@ -5,4 +5,5 @@ package model
 type Station struct {
 	DetabaseID string `json:"detabaseID"`
 	Name       string `json:"name"`
+	IsLiked    bool   `json:"isLiked"`
 }

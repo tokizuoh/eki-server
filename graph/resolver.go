@@ -15,8 +15,9 @@ import (
 type Resolver struct{}
 
 type Station struct {
-	id   string
-	name string
+	id      string
+	name    string
+	isLiked bool
 }
 
 var db *sql.DB
@@ -28,6 +29,8 @@ func init() {
 	}
 	db = conn
 }
+
+// Query
 
 func (r *Resolver) station(name string) ([]*model.Station, error) {
 	q := fmt.Sprintf("SELECT * FROM station WHERE name='%s'", name)
@@ -49,7 +52,7 @@ func search(query string) ([]*model.Station, error) {
 	var mss []*model.Station
 	for rows.Next() {
 		var s Station
-		err := rows.Scan(&s.id, &s.name)
+		err := rows.Scan(&s.id, &s.name, &s.isLiked)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -57,9 +60,36 @@ func search(query string) ([]*model.Station, error) {
 		ms := model.Station{
 			DetabaseID: s.id,
 			Name:       s.name,
+			IsLiked:    s.isLiked,
 		}
 		mss = append(mss, &ms)
 	}
 
 	return mss, nil
+}
+
+// Mutation
+
+func (r *Resolver) likeStation(databaseID string) (*model.Station, error) {
+	upd, err := db.Prepare("UPDATE station SET is_liked=? WHERE id=?")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = upd.Exec(true, databaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	q := fmt.Sprintf("SELECT * FROM station WHERE id='%s'", databaseID)
+	ss, err := search(q)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ss) != 1 {
+		return nil, fmt.Errorf("unexpected")
+	}
+
+	return ss[0], nil
 }

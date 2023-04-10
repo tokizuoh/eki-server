@@ -36,6 +36,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -43,6 +44,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Mutation struct {
+		LikeStation func(childComplexity int, databaseID string) int
+	}
+
 	Query struct {
 		SearchStation func(childComplexity int, forArg string) int
 		Station       func(childComplexity int, name string) int
@@ -50,10 +55,14 @@ type ComplexityRoot struct {
 
 	Station struct {
 		DetabaseID func(childComplexity int) int
+		IsLiked    func(childComplexity int) int
 		Name       func(childComplexity int) int
 	}
 }
 
+type MutationResolver interface {
+	LikeStation(ctx context.Context, databaseID string) (*model.Station, error)
+}
 type QueryResolver interface {
 	Station(ctx context.Context, name string) ([]*model.Station, error)
 	SearchStation(ctx context.Context, forArg string) ([]*model.Station, error)
@@ -73,6 +82,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Mutation.likeStation":
+		if e.complexity.Mutation.LikeStation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_likeStation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LikeStation(childComplexity, args["databaseID"].(string)), true
 
 	case "Query.searchStation":
 		if e.complexity.Query.SearchStation == nil {
@@ -105,6 +126,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Station.DetabaseID(childComplexity), true
 
+	case "Station.isLiked":
+		if e.complexity.Station.IsLiked == nil {
+			break
+		}
+
+		return e.complexity.Station.IsLiked(childComplexity), true
+
 	case "Station.name":
 		if e.complexity.Station.Name == nil {
 			break
@@ -131,6 +159,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			first = false
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Query(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 
@@ -182,6 +225,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_likeStation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["databaseID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("databaseID"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["databaseID"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -266,6 +324,66 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Mutation_likeStation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_likeStation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LikeStation(rctx, fc.Args["databaseID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Station)
+	fc.Result = res
+	return ec.marshalOStation2ᚖgithubᚗcomᚋtokizuohᚋekiᚑserverᚋgraphᚋmodelᚐStation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_likeStation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "detabaseID":
+				return ec.fieldContext_Station_detabaseID(ctx, field)
+			case "name":
+				return ec.fieldContext_Station_name(ctx, field)
+			case "isLiked":
+				return ec.fieldContext_Station_isLiked(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Station", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_likeStation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_station(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_station(ctx, field)
 	if err != nil {
@@ -306,6 +424,8 @@ func (ec *executionContext) fieldContext_Query_station(ctx context.Context, fiel
 				return ec.fieldContext_Station_detabaseID(ctx, field)
 			case "name":
 				return ec.fieldContext_Station_name(ctx, field)
+			case "isLiked":
+				return ec.fieldContext_Station_isLiked(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Station", field.Name)
 		},
@@ -364,6 +484,8 @@ func (ec *executionContext) fieldContext_Query_searchStation(ctx context.Context
 				return ec.fieldContext_Station_detabaseID(ctx, field)
 			case "name":
 				return ec.fieldContext_Station_name(ctx, field)
+			case "isLiked":
+				return ec.fieldContext_Station_isLiked(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Station", field.Name)
 		},
@@ -594,6 +716,50 @@ func (ec *executionContext) fieldContext_Station_name(ctx context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Station_isLiked(ctx context.Context, field graphql.CollectedField, obj *model.Station) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Station_isLiked(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsLiked, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Station_isLiked(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Station",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2380,6 +2546,42 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** object.gotpl ****************************
 
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "likeStation":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_likeStation(ctx, field)
+			})
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2482,6 +2684,13 @@ func (ec *executionContext) _Station(ctx context.Context, sel ast.SelectionSet, 
 		case "name":
 
 			out.Values[i] = ec._Station_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "isLiked":
+
+			out.Values[i] = ec._Station_isLiked(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
